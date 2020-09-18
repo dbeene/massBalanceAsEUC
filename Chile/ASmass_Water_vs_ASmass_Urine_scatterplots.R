@@ -63,7 +63,7 @@ ggplot(chile, aes(x = mean_water_intake * WaterAS1yr2, y = mean_urine_volume * U
                                                    y = 'Mass Arsenic Excreted in Urine (µg / day)',
                                                    title = 'Chile: Average Water Intake') + 
   annotate('text',x = 70, y = 1100, label = lm_eqn(ave.lm), parse = TRUE,size = 3) + 
-  theme_bw() + 
+  theme_bw() + geom_abline(intercept = 0, slope = 1, lty = 2, col = 'red') + 
   theme(plot.title = element_text(hjust = 0.5))
 
 dev.off()
@@ -76,7 +76,7 @@ ggplot(chile, aes(x = water_intake * WaterAS1yr2,
                                                    y = 'Mass Arsenic Excreted in Urine (µg / day)',
                                                    title = 'Chile: Individual Water Intake') + 
   annotate('text',x = 320, y = 1100, label = lm_eqn(ind.lm), parse = TRUE,size = 3) + 
-  theme_bw() + 
+  theme_bw() + geom_abline(intercept = 0, slope = 1, lty = 2, col = 'red') + 
   theme(plot.title = element_text(hjust = 0.5))
 
 dev.off()
