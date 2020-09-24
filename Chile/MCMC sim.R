@@ -2,8 +2,8 @@
 
 library(tidyverse)
 library(lubridate)
-ar.dat = readxl::read_xlsx('FOR_ANDRES_012920.xlsx')
-chile<-read.csv("Chile_Arsenic_Data_Redux.csv")
+ar.dat = readxl::read_xlsx('../../../FOR_ANDRES_012920.xlsx')
+chile<-read.csv("../../../Chile_Arsenic_Data_Redux.csv")
 chile = chile %>% mutate(Cancer = !is.na(Other_cancer) | Cancer_type != 'control')
 
 chile = chile %>% group_by(SubjectID) %>% mutate(yrin = year(DateEnr)) %>% 
@@ -28,7 +28,7 @@ chile$allmuni = c('All municipal water','Not all municipal water')[2-(chile$prop
 
 chile$water_intake = ar.dat$TKHL[match(chile$SubjectID,ar.dat$commonID)]
 
-propdat = readxl::read_xlsx('WATER_INFO_060520.xlsx')
+propdat = readxl::read_xlsx('../../../WATER_INFO_060520.xlsx')
 chile$prop_muni = propdat$percent_muni[match(chile$SubjectID,propdat$commonID)]/100
 
 lm_eqn <- function(df){
@@ -70,6 +70,12 @@ p6 = ggplot(chile,aes(x = water_intake, y = UrinaryCreat)) + geom_point() + geom
   geom_smooth(col = rgb(0,1,0,1), fill = rgb(0,1,0), alpha = 0.2, lty = 2) + theme_bw() + 
   annotate('text',x = 4, y = 400, label = lm_eqn(data.frame(x = chile$water_intake,
                                                             y = chile$UrinaryCreat)), parse = TRUE,size = 3)
+
+p7 = ggplot(chile,aes(x = UrinaryCreat, y = UrinaryAsBet)) + geom_point() + geom_smooth(method = 'lm') + 
+  geom_smooth(col = rgb(0,1,0,1), fill = rgb(0,1,0), alpha = 0.2, lty = 2) + theme_bw() + 
+  annotate('text',x = 200, y = 400, label = lm_eqn(data.frame(x = chile$UrinaryCreat,
+                                                            y = chile$UrinaryAsBet)), parse = TRUE,size = 3)
+
 
 
 #using urine vs fluid intake data from https://www.hindawi.com/journals/dm/2015/231063/ to get conditional distribution
