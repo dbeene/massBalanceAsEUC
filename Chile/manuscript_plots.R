@@ -358,3 +358,4 @@ ggplot(grandMC, aes(x=intcpt, y = slp, col = source, lty = source, shape = sourc
   scale_color_manual(name = 'Study / Intake sources',values = gg_color_hue(7)[c(6,7,1,2,3,4,5)])
 #scale_color_brewer(type = 'qual',palette = 6,name = 'Study / Intake sources') 
 
+dev.off()
