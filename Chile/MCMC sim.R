@@ -17,9 +17,7 @@ chile$WaterAS1yr2<-ifelse(chile$WaterAS1yr==0,0.1,chile$WaterAS1yr)
 chile$WaterAS6yr2<-ifelse(chile$WaterAS6yr==0,0.1,chile$WaterAS6yr)
 
 chile = subset(chile,!is.na(UrinaryArsenic))
-
 chile$total_minus_AsB = chile$UrinaryArsenic - chile$UrinaryAsBet
-
 chile$total_minus_AsB[chile$total_minus_AsB < 0] = 0.1
 
 chile$DateEnr = as.Date(chile$DateEnr)

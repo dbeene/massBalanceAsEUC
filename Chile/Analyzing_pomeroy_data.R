@@ -4,7 +4,7 @@ pomdat = read_csv('Pomeroy_table5.csv')
 
 ggplot(pomdat, aes(x = Day, y = `Percent Initial Intake Excreted in Urine`)) +
   geom_smooth(aes(col = factor(Subject)), se = F) + geom_point(aes(col = factor(Subject))) + 
-  geom_smooth(col = 'black')
+  geom_smooth(col = 'black')  + geom_hline(yintercept = 0)
 
 ggplot(pomdat, aes(x = Day, y = `Percent Initial Intake Excreted in feces`)) +
   geom_smooth(aes(col = factor(Subject)), se = F) + geom_point(aes(col = factor(Subject))) + 
