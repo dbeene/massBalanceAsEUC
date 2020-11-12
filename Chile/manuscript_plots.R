@@ -3,6 +3,15 @@ library(ggplot2)
 library(tidyverse)
 library(lubridate)
 
+lm_eqn <- function(df){
+  m <- lm(y ~ x, df);
+  eq <- substitute(italic(y) == a + b~italic(x)*","~~italic(r)^2~"="~r2~","~~italic(p)~"="~pval, 
+                   list(a = format(unname(coef(m)[1]), digits = 2),
+                        b = format(unname(coef(m)[2]), digits = 2),
+                        r2 = format(summary(m)$r.squared, digits = 3),
+                        pval = format(summary(m)$coefficients[2,4], digits = 3)))
+  as.character(as.expression(eq));
+}
 ### Data load in and variable collation
 ar.dat = readxl::read_xlsx('../../../FOR_ANDRES_012920.xlsx')
 chile<-read.csv("../../../Chile_Arsenic_Data_Redux.csv")
@@ -27,6 +36,28 @@ chile$water_intake = ar.dat$TKHL[match(chile$SubjectID,ar.dat$commonID)]
 
 propdat = readxl::read_xlsx('../../../WATER_INFO_060520.xlsx')
 chile$prop_muni = propdat$percent_muni[match(chile$SubjectID,propdat$commonID)]/100
+
+lm.creat = lm(UrinaryArsenic ~ UrinaryCreat, chile)
+lm.creat2 = lm(UrinaryArsenic ~ UrinaryCreat + Exp_Age + factor(Sex) + Wght, chile)
+chile$UrAr.CreatAdj = NA
+chile$UrAr.CreatAdj[!is.na(chile$UrinaryCreat) & !is.na(chile$Wght)] = lm.creat2$residuals
+chile$UrAr.CreatAdj = chile$UrAr.CreatAdj + lm.creat$coefficients[1] + 
+  lm.creat$coefficients[2] * mean(chile$UrinaryCreat,na.rm=T)
+
+ggplot(chile, aes(x = UrinaryCreat, y = UrinaryArsenic)) + stat_smooth(method = 'lm') + geom_point() + 
+  annotate('text',300, 500,label = lm_eqn(data.frame(x = chile$UrinaryCreat,
+                                                     y = chile$UrinaryArsenic)), parse = TRUE,size = 3)
+ggplot(chile, aes(x = UrinaryCreat, y = UrAr.CreatAdj)) + stat_smooth(method = 'lm') + geom_point() + 
+  annotate('text',300, 500,label = lm_eqn(data.frame(x = chile$UrinaryCreat,
+                                                     y = chile$UrAr.CreatAdj)), parse = TRUE,size = 3)
+
+ggplot(subset(chile,!is.na(UrinaryCreat)), aes(x = WaterAS1yr2, y = UrinaryArsenic)) + stat_smooth(method = 'lm') + geom_point() + 
+  annotate('text',40, 500,label = lm_eqn(data.frame(x = chile$WaterAS1yr2[!is.na(chile$UrAr.CreatAdj)],
+                                                     y = chile$UrinaryArsenic[!is.na(chile$UrAr.CreatAdj)])), parse = TRUE,size = 3)
+
+ggplot(chile, aes(x = WaterAS1yr2, y = UrAr.CreatAdj)) + stat_smooth(method = 'lm') + geom_point() + 
+  annotate('text',40, 500,label = lm_eqn(data.frame(x = chile$WaterAS1yr2,
+                                                    y = chile$UrAr.CreatAdj)), parse = TRUE,size = 3)
 
 ####Figure 2: histogram of water intake
 
@@ -186,7 +217,7 @@ fish.conc = weighted.mean(c(tuna.mean, hake.mean, mackerel.mean,
 # })
 chile = subset(chile, !is.na(OZ_fish_seafood))
 
-chile$AS_in = chile$water_intake * chile$WaterAS1yr2 + chile$OZ_fish_seafood * fish.conc
+chile$AS_in2 = chile$water_intake * chile$WaterAS1yr2 + chile$OZ_fish_seafood * fish.conc
 chile$AS_out = (coef(ur.lm)[1] + coef(ur.lm)[2] * chile$water_intake * TW_inflate) * 
   chile$UrinaryArsenic * Ar.expand 
 
@@ -198,7 +229,7 @@ summary(lm(AS_out ~ AS_in, chile))
 
 png('Fig4_Chile_AS_mass_in_vs_out.png',width = 360, height = 360)
 
-ggplot(chile, aes(x=AS_in, y=AS_out)) +
+ggplot(chile, aes(x=AS_in2, y=AS_out)) +
   geom_point() + stat_smooth(method = 'lm', fullrange = T, se = F, col = 'red', lwd = 0.5) + 
   geom_abline(slope = 1, intercept = 0, lty = 2, col = 'black') +
   labs(x = 'Mass Arsenic Consumed (µg)',
@@ -206,6 +237,87 @@ ggplot(chile, aes(x=AS_in, y=AS_out)) +
   theme_bw() + scale_x_continuous(expand = c(0.01,0))
 
 dev.off()
+
+#Version inferring total arsenic mass excreted from creatinine concentration
+##Using equation and RMSE from https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3022241
+
+pred_total_creatinine = function(weight, age, black, female, sim.errors = F){
+  out = 879.89 + 12.51 * weight - 6.19 * age + 34.51 * black - 379.42 * female
+  if(sim.errors){
+    out = rnorm(length(out), out, 357)
+  }
+  return(out)
+}
+
+#assume Urinary Creatinine is in units of mg/deciLiter
+
+chile$AS_out2 = chile$UrinaryArsenic/(chile$UrinaryCreat * 10) * 
+  pred_total_creatinine(chile$Wght, chile$Exp_Age, 0, chile$Sex - 1) * Ar.expand 
+
+summary(lm(AS_out2 ~ AS_in, chile))
+
+png('Fig4_Chile_AS_mass_in_vs_out_creatinine_adj.png',width = 360, height = 360)
+
+ggplot(chile, aes(x=AS_in, y=AS_out)) +
+  geom_point() + stat_smooth(method = 'lm', fullrange = T, se = F, col = 'black',lwd = 0.5) + 
+  geom_abline(slope = 1, intercept = 0, lty = 2, col = 'red') +
+  labs(x = 'Mass Arsenic Consumed (µg)',
+       y = 'Mass Arsenic Excreted (µg)') + 
+  theme_bw() + scale_x_continuous(expand = c(0.01,0)) + 
+  annotate('text', 300, 800, label = lm_eqn(df = data.frame(x = chile$AS_in, 
+                                                            y = chile$AS_out)),
+           parse = T, size = 3) + 
+  labs(title = 'Water intake only, drinking water-based excretion')
+
+ggplot(chile, aes(x=AS_in2, y=AS_out)) +
+  geom_point() + stat_smooth(method = 'lm', fullrange = T, se = F, col = 'black',lwd = 0.5) + 
+  geom_abline(slope = 1, intercept = 0, lty = 2, col = 'red') +
+  labs(x = 'Mass Arsenic Consumed (µg)',
+       y = 'Mass Arsenic Excreted (µg)') + 
+  theme_bw() + scale_x_continuous(expand = c(0.01,0)) + 
+  annotate('text', 300, 500, label = lm_eqn(df = data.frame(x = chile$AS_in2, 
+                                                            y = chile$AS_out)),
+           parse = T, size = 3) + 
+  labs(title = 'Water and seafood intake, drinking water-based excretion')
+
+
+
+ggplot(chile, aes(x=AS_in, y=AS_out2)) +
+  geom_point() + stat_smooth(method = 'lm', fullrange = T, se = F, col = 'black',lwd = 0.5) + 
+  geom_abline(slope = 1, intercept = 0, lty = 2, col = 'red') +
+  labs(x = 'Mass Arsenic Consumed (µg)',
+       y = 'Mass Arsenic Excreted (µg)') + 
+  theme_bw() + scale_x_continuous(expand = c(0.01,0)) + 
+  annotate('text', 300, 400, label = lm_eqn(df = data.frame(x = chile$AS_in, 
+                                                            y = chile$AS_out2)),
+           parse = T, size = 3) + 
+  labs(title = 'Water intake only, creatinine-based excretion')
+
+ggplot(chile, aes(x=AS_in2, y=AS_out2)) +
+  geom_point() + stat_smooth(method = 'lm', fullrange = T, se = F, col = 'black',lwd = 0.5) + 
+  geom_abline(slope = 1, intercept = 0, lty = 2, col = 'red') +
+  labs(x = 'Mass Arsenic Consumed (µg)',
+       y = 'Mass Arsenic Excreted (µg)') + 
+  theme_bw() + scale_x_continuous(expand = c(0.01,0)) + 
+  annotate('text', 300, 400, label = lm_eqn(df = data.frame(x = chile$AS_in2, 
+                                                            y = chile$AS_out2)),
+           parse = T, size = 3) + 
+  labs(title = 'Water and seafood intake, creatinine-based excretion')
+
+
+dev.off()
+
+
+#plot(chile$AS_out, chile$AS_out2)
+#abline(0,1)
+#results in generally lower mass of arsenic
+
+# exp_creat = pred_total_creatinine(chile$Wght, chile$Exp_Age, 0, chile$Sex - 1, F)
+# obs_tot1 = chile$UrinaryCreat * (coef(ur.lm)[1] + coef(ur.lm)[2] * chile$water_intake * TW_inflate) * 10
+# 
+# plot(seq(0,max(exp_creat,na.rm=T)), seq(0,max(exp_creat,na.rm=T)), type = 'l', ylab = 'calculated CER',
+#      xlab = 'expected CER', main = 'assume urinary creatinine is concentration in mg/L')
+# points(exp_creat, obs_tot1)
 
 
 ####Figure 5: Arsenic intake vs excretion MC simulation histograms
@@ -336,12 +448,17 @@ MC1$source = 'Chile: Water'
 MC2$source = 'Chile: Water & Seafood'
 grandMC = rbind(MC1, MC2)
 
+unmMC = read.csv('../../../NavajoMC.csv')
+unmMC = unmMC[,-1]
+
+grandMC = rbind(grandMC, unmMC)
+
 gg_color_hue <- function(n) {
   hues = seq(15, 375, length = n + 1)
   hcl(h = hues, l = 65, c = 100)[1:n]
 }
 
-png('Fig6_Chile_cloudplot.png', width = 360, height = 360)
+png('Fig6_Chile_UNMcloudplot.png', width = 720, height = 360)
 
 ggplot(grandMC, aes(x=intcpt, y = slp, col = source, lty = source, shape = source)) + 
   geom_point(alpha = 0.1) + 
