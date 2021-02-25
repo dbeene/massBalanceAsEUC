@@ -31,14 +31,14 @@ fit1 <- lm(METALs$UMMA2 ~ METALs$waterAs6y, family=gaussian(link="identity"), da
 
 ##plot Urine UTAS vs water arsenic with the regression line
 ggplot(METALs, aes(x=METALs$waterAs6y, y=METALs$UTAS2)) + 
-  geom_point(size=1, col='red')+
+  geom_point(size=1, col='#006699')+
   labs(x ="Water Arsenic (�g/L)", y = "Urinary Arsenic (�g/L)")+
   geom_smooth(method=lm, se=FALSE, color="blue")+
   ggtitle("UNM METALS Navajo Birth Cohort")
 
 ####plot Urine UTAS vs water arsenic with the regression line of Urine UTAS vs water arsenic controlling for ges age
 ggplot(METALs, aes(x=METALs$waterAs6y, y=METALs$UTAS2)) + 
-  geom_point(size=1, col='red')+
+  geom_point(size=1, col='#006699')+
   labs(x ="Water Arsenic (�g/L)", y = "Urinary Arsenic (�g/L)")+
   geom_smooth(method="lm", formula = y ~ x, se = FALSE, color="blue")+
  ##add the line after adjuting for ges age: geom_abline(intercept=6.23955,slope=0.37789, color="green")+ 
@@ -47,7 +47,7 @@ ggplot(METALs, aes(x=METALs$waterAs6y, y=METALs$UTAS2)) +
 
 ##plot Urine UTAS_Del vs water arsenic with the regression line (not significant)
 ggplot(METALs, aes(x=METALs$waterAs6y, y=METALs$UTAS_del2)) + 
-  geom_point(size=1, col='red')+
+  geom_point(size=1, col='#006699')+
   labs(x ="Water Arsenic (�g/L)", y = "Urinary Arsenic (�g/L)")+
   geom_smooth(method=lm, se=FALSE, color="blue")+
   ggtitle("UNM METALS Navajo Birth Cohort")
@@ -56,7 +56,7 @@ ggplot(METALs, aes(x=METALs$waterAs6y, y=METALs$UTAS_del2)) +
 
 ##plot Urine DMA vs water arsenic with the regression line
 ggplot(METALs, aes(x=METALs$waterAs6y, y=METALs$UDMA2)) + 
-  geom_point(size=1, col='red')+
+  geom_point(size=1, col='#006699')+
   labs(x ="Water Arsenic (�g/L)", y = "Urinary Arsenic DMA(�g/L)")+
   geom_smooth(method=lm, se=FALSE, color="blue")+
   ggtitle("UNM METALS Navajo Birth Cohort")
